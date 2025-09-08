@@ -1,0 +1,32 @@
+{
+  "name": "Python Dev Container",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" },
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "python.pythonPath": "/usr/local/bin/python3",
+        "git.path": "/usr/bin/git"
+      }
+    }
+  },
+
+  // Install JS deps once after build
+  "postCreateCommand": "npm ci",
+
+  // Then start Tailwind in watch mode on each start
+  "postStartCommand": "npm run watch:css"
+}

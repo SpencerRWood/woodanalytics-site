@@ -1,0 +1,40 @@
+# ---------- Node builder: compiles Tailwind ----------
+FROM node:20-alpine AS tailwind-builder
+WORKDIR /build
+
+# Copy only files needed to install and run Tailwind quickly (better cache)
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Copy the rest needed for Tailwind to scan templates & build CSS
+# Adjust paths to match your project
+COPY tailwind.config.js ./
+COPY app ./app
+
+# Build Tailwind (assumes your script doesn't rely on npx)
+# If your package.json still uses npx, change scripts to plain "tailwindcss ..."
+RUN npx tailwindcss -i ./app/static/css/styles.css -o ./app/static/css/output.css
+
+# ---------- Python runtime ----------
+FROM python:3.11-slim AS runtime
+WORKDIR /workspace
+
+# System deps for psycopg2, etc. (trim as needed)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libpq-dev curl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+# Python deps
+COPY ../requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# App code
+COPY . /workspace
+
+# Bring in the compiled CSS from the builder
+COPY --from=tailwind-builder /build/app/static/css/output.css /workspace/app/static/css/output.css
+
+# Expose & run
+EXPOSE 8001
+# For prod you'd typically use gunicorn/uvicorn workers; keeping reload here only if you want dev-like behavior
+CMD ["uvicorn", "app.app:app", "--host", "0.0.0.0", "--port", "8001"]
