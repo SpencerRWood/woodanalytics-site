@@ -1,0 +1,70 @@
+name: Deploy to Droplet
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+env:
+  REMOTE_PATH: ${{ secrets.DROPLET_PATH }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add known_hosts (optional if you pin host keys another way)
+        if: ${{ secrets.KNOWN_HOSTS != '' }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Create remote folder
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          script: |
+            mkdir -p "${{ env.REMOTE_PATH }}"
+
+      - name: Sync repository to droplet (excluding dev files)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          source: "."
+          target: "${{ env.REMOTE_PATH }}"
+          overwrite: true
+          rm: true
+          # Keep prod clean; do not upload your local virtualenv or git metadata.
+          # Add more patterns if needed.
+          exclude: |
+            .git*
+            .github/
+            .venv/
+            node_modules/
+            __pycache__/
+            *.log
+
+      - name: Deploy containers
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          script: |
+            cd "${{ env.REMOTE_PATH }}"
+            # Safety: ensure docker exists and is usable
+            docker --version
+            # Up with build using your prod compose
+            docker compose -f docker-compose.prod.yml up -d --build
+            # Optional: prune old images (safe-ish if you only run this host for this app)
+            docker image prune -f
