@@ -5,6 +5,10 @@ on:
     branches: [ "main" ]
   workflow_dispatch: {}
 
+env:
+  REMOTE_PATH: ${{ secrets.DROPLET_PATH }}
+  DROPLET_FINGERPRINT: ${{ secrets.DROPLET_FINGERPRINT }} # optional: pin host key
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -13,28 +17,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Quick sanity checks so we fail early with a helpful message
+      # Explicit, static checks (avoid dynamic indexing into secrets)
       - name: Validate required secrets
         run: |
-          required=(DROPLET_HOST DROPLET_USER DROPLET_PATH SSH_PRIVATE_KEY)
-          for s in "${required[@]}"; do
-            if [ -z "${{ secrets[format('{0}', s)] }}" ]; then
-              echo "❌ Missing required secret: $s"
-              exit 1
-            fi
-          done
-          echo "✅ Required secrets present"
-
-      # Optional (recommended): pin host fingerprint to avoid TOFU.
-      # Set repo secret DROPLET_FINGERPRINT to something like: SHA256:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-      - name: Set host fingerprint env (optional)
-        run: |
-          if [ -n "${{ secrets.DROPLET_FINGERPRINT }}" ]; then
-            echo "DROPLET_FINGERPRINT=${{ secrets.DROPLET_FINGERPRINT }}" >> $GITHUB_ENV
-            echo "🔒 Using pinned host fingerprint"
-          else
-            echo "⚠️ No DROPLET_FINGERPRINT set; proceeding without pinning"
-          fi
+          if [ -z "${{ secrets.DROPLET_HOST }}" ]; then echo "Missing secret: DROPLET_HOST"; exit 1; fi
+          if [ -z "${{ secrets.DROPLET_USER }}" ]; then echo "Missing secret: DROPLET_USER"; exit 1; fi
+          if [ -z "${{ secrets.DROPLET_PATH }}" ]; then echo "Missing secret: DROPLET_PATH"; exit 1; fi
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then echo "Missing secret: SSH_PRIVATE_KEY"; exit 1; fi
+          echo "✅ Secrets present"
 
       - name: Create remote folder
         uses: appleboy/ssh-action@v1.0.3
@@ -42,14 +32,13 @@ jobs:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          fingerprint: ${{ env.DROPLET_FINGERPRINT }}
+          fingerprint: ${{ env.DROPLET_FINGERPRINT }} # leave blank if you didn't set it
           script_stop: true
           debug: true
           script: |
             set -e
-            mkdir -p "${{ secrets.DROPLET_PATH }}"
-            echo "✅ Created/exists: ${{ secrets.DROPLET_PATH }}"
-            # Show basic info for debugging connectivity
+            mkdir -p "${{ env.REMOTE_PATH }}"
+            echo "✅ Created/exists: ${{ env.REMOTE_PATH }}"
             whoami && hostname && uname -a
 
       - name: Sync repository to droplet (exclude CI/dev files & secrets)
@@ -60,7 +49,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           fingerprint: ${{ env.DROPLET_FINGERPRINT }}
           source: "."
-          target: "${{ secrets.DROPLET_PATH }}"
+          target: "${{ env.REMOTE_PATH }}"
           overwrite: true
           rm: true
           debug: true
@@ -84,8 +73,8 @@ jobs:
           debug: true
           script: |
             set -e
-            cd "${{ secrets.DROPLET_PATH }}"
-            echo "📦 In $(pwd)"
+            cd "${{ env.REMOTE_PATH }}"
+
             if ! command -v docker >/dev/null 2>&1; then
               echo "Installing Docker..."
               curl -fsSL https://get.docker.com | sh
@@ -98,10 +87,10 @@ jobs:
             docker --version
             docker compose version
 
-            echo "🚀 Deploying with docker-compose.prod.yml"
+            echo "🚀 Deploying"
             docker compose -f docker-compose.prod.yml up -d --build
 
-            echo "🧹 Pruning dangling images"
+            echo "🧹 Cleaning up dangling images"
             docker image prune -f
 
             echo "✅ Deploy complete"
