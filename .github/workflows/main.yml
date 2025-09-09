@@ -1,14 +1,9 @@
-
 name: Deploy to Droplet
 
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch: {}
-
-env:
-  REMOTE_PATH: ${{ secrets.DROPLET_PATH }}
-  KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
 
 jobs:
   deploy:
@@ -18,39 +13,57 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add known_hosts (with safe fallback)
+      # Quick sanity checks so we fail early with a helpful message
+      - name: Validate required secrets
         run: |
-          mkdir -p ~/.ssh
-          if [ -n "${KNOWN_HOSTS}" ]; then
-            echo "${KNOWN_HOSTS}" >> ~/.ssh/known_hosts
-          else
-            # First-use fallback: trust-on-first-use of droplet host key
-            ssh-keyscan -H ${{ secrets.DROPLET_HOST }} >> ~/.ssh/known_hosts
-          fi
-          chmod 644 ~/.ssh/known_hosts
+          required=(DROPLET_HOST DROPLET_USER DROPLET_PATH SSH_PRIVATE_KEY)
+          for s in "${required[@]}"; do
+            if [ -z "${{ secrets[format('{0}', s)] }}" ]; then
+              echo "❌ Missing required secret: $s"
+              exit 1
+            fi
+          done
+          echo "✅ Required secrets present"
 
-      - name: Ensure remote folder exists
+      # Optional (recommended): pin host fingerprint to avoid TOFU.
+      # Set repo secret DROPLET_FINGERPRINT to something like: SHA256:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      - name: Set host fingerprint env (optional)
+        run: |
+          if [ -n "${{ secrets.DROPLET_FINGERPRINT }}" ]; then
+            echo "DROPLET_FINGERPRINT=${{ secrets.DROPLET_FINGERPRINT }}" >> $GITHUB_ENV
+            echo "🔒 Using pinned host fingerprint"
+          else
+            echo "⚠️ No DROPLET_FINGERPRINT set; proceeding without pinning"
+          fi
+
+      - name: Create remote folder
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          fingerprint: ${{ env.DROPLET_FINGERPRINT }}
+          script_stop: true
+          debug: true
           script: |
-            mkdir -p "${{ env.REMOTE_PATH }}"
+            set -e
+            mkdir -p "${{ secrets.DROPLET_PATH }}"
+            echo "✅ Created/exists: ${{ secrets.DROPLET_PATH }}"
+            # Show basic info for debugging connectivity
+            whoami && hostname && uname -a
 
-      - name: Sync repository to droplet (exclude dev/CI files and secrets)
+      - name: Sync repository to droplet (exclude CI/dev files & secrets)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          fingerprint: ${{ env.DROPLET_FINGERPRINT }}
           source: "."
-          target: "${{ env.REMOTE_PATH }}"
+          target: "${{ secrets.DROPLET_PATH }}"
           overwrite: true
           rm: true
+          debug: true
           exclude: |
             .git*
             .github/
@@ -65,19 +78,30 @@ jobs:
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          fingerprint: ${{ env.DROPLET_FINGERPRINT }}
+          script_stop: true
+          debug: true
           script: |
             set -e
-            cd "${{ env.REMOTE_PATH }}"
-
-            # Sanity checks
-            docker --version
+            cd "${{ secrets.DROPLET_PATH }}"
+            echo "📦 In $(pwd)"
+            if ! command -v docker >/dev/null 2>&1; then
+              echo "Installing Docker..."
+              curl -fsSL https://get.docker.com | sh
+            fi
             if ! docker compose version >/dev/null 2>&1; then
-              echo "Docker Compose plugin not found. Please install docker compose plugin on the droplet."
-              exit 1
+              echo "Installing Docker Compose plugin..."
+              apt-get update -y && apt-get install -y docker-compose-plugin
             fi
 
-            # Deploy (build + recreate as needed)
+            docker --version
+            docker compose version
+
+            echo "🚀 Deploying with docker-compose.prod.yml"
             docker compose -f docker-compose.prod.yml up -d --build
 
-            # Optional cleanup of dangling images
+            echo "🧹 Pruning dangling images"
             docker image prune -f
+
+            echo "✅ Deploy complete"
