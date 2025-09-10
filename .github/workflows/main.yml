@@ -40,18 +40,17 @@ jobs:
             echo "✅ Created/exists: ${{ env.REMOTE_PATH }}"
             whoami && hostname && uname -a
 
-      - name: Sync repository to droplet (no excludes; action version doesn't support it)
+      - name: Sync repository to droplet
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          fingerprint: ${{ env.DROPLET_FINGERPRINT }}
           source: "."
-          target: "${{ env.REMOTE_PATH }}"
+          target: "${{ secrets.DROPLET_PATH }}"
           overwrite: true
-          rm: true
           debug: true
+
 
       - name: Deploy containers
         uses: appleboy/ssh-action@v1.0.3
