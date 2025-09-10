@@ -15,5 +15,7 @@ services:
     restart: unless-stopped
     env_file:
       - /srv/website/.env.prod
-    # remove entrypoint
-    command: ["tunnel","--no-autoupdate","run"]
+    command: ["tunnel","--no-autoupdate","run","--token","${TUNNEL_TOKEN}"]
+    depends_on:
+      web:
+        condition: service_healthy
