@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile     # <-- use the new prod Dockerfile
-    command: uvicorn app:app --host 0.0.0.0 --port 8001 --proxy-headers
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --proxy-headers
     expose: ["8001"]
     restart: unless-stopped
     security_opt: ["no-new-privileges:true"]
