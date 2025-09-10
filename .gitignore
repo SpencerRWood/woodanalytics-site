@@ -1,6 +1,5 @@
 # Node.js dependencies
 node_modules/
-.devcontainer
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
