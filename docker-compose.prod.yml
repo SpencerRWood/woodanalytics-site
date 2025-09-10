@@ -16,6 +16,4 @@ services:
     env_file:
       - /srv/website/.env.prod
     command: ["tunnel","--no-autoupdate","run","--token","${TUNNEL_TOKEN}"]
-    depends_on:
-      web:
-        condition: service_healthy
+
