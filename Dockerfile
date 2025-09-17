@@ -1,51 +1,42 @@
-# ---------- Assets stage: build Tailwind CSS ----------
+# ---- build static assets (Tailwind/DaisyUI) ----
 FROM node:20-alpine AS assets
 WORKDIR /src
+# only copy what we need first for better layer caching
+COPY package*.json tailwind.config.js ./
+# copy the rest so tailwind has the source files
+COPY . .
+RUN npm ci --no-audit --no-fund
+# assumes you have "build:css" in package.json
+RUN npm run build:css
 
-# 1) Install Tailwind + DaisyUI
-COPY package*.json ./
-RUN npm ci
+# ---- python runtime ----
 
-# 2) Copy Tailwind config + input css
-COPY tailwind.config.js styles.css ./
-
-# 3) Make a 'templates' folder and copy your root HTML into it
-#    (Tailwind just needs to read them for class scanning/purge)
-RUN mkdir -p templates
-COPY ./*.html ./templates/
-
-# If later you move files into app/templates/, use this instead:
-# COPY app/templates ./templates
-
-# 4) Build CSS
-RUN npx tailwindcss -c tailwind.config.js \
-  -i ./styles.css \
-  -o ./output.css \
-  --minify
-
-
-# ---------- Runtime image ----------
 FROM python:3.11-slim AS runtime
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# security: create non-root user
+RUN useradd -m -u 10001 appuser
+
 WORKDIR /app
-
-# system deps for pip (if needed)
+# install system deps as needed (curl for healthchecks/logs if desired)
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    ca-certificates curl && rm -rf /var/lib/apt/lists/*
+    ca-certificates curl && \
+    rm -rf /var/lib/apt/lists/*
 
-# 5) Python deps
+# python deps
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 6) App code
+# app code
 COPY . .
 
-# 7) Bring in the built CSS to the right path your templates reference
-RUN mkdir -p /app/static/css
-COPY --from=assets /src/output.css /app/static/css/output.css
+# bring in the built CSS from the assets stage (adjust path to your repo)
+# if your build wrote to ./app/static/css/output.css per your package.json, this matches it:
+COPY --from=assets /src/app/static /app/app/static
 
-# 8) Non-root (optional)
-RUN useradd -m -u 10001 appuser
+# drop privileges
 USER appuser
 
-# 9) Entrypoint (example)
-# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001", "--proxy-headers"]
+EXPOSE 8001
+# NOTE: we’ll set the exact command in docker-compose.prod.yml
