@@ -37,6 +37,7 @@ module.exports = {
   },
   // Optional: keep common gaps around even if purge misses them
   safelist: [
-    { pattern: /(gap|space-x)-(2|3|4|6|8|10|12)/ },
+    { pattern: /(gap|space-x)-(2|3|4|6|8|10|12)/ },"hidden","block","flex",
+    "md:hidden","md:block","md:flex",
   ],
 }

@@ -2,7 +2,7 @@
   "name": "website-template",
   "version": "1.0.0",
   "scripts": {
-    "build:css": "npx tailwindcss -i ./app/static/css/styles.css -o ./app/static/css/output.css",
+    "build:css": "npx tailwindcss -i ./app/static/css/styles.css -o ./app/static/css/output.css --minify",
     "watch:css": "npx tailwindcss -i ./app/static/css/styles.css -o ./app/static/css/output.css --watch"
   },
   "dependencies": {
