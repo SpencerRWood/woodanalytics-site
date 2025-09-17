@@ -13,32 +13,49 @@
            bg-base-100/90 backdrop-blur supports-[backdrop-filter]:bg-base-100/80
            transition-colors duration-300 py-2 w-full">
   <div class="max-w-7xl mx-auto grid grid-cols-3 items-center px-4">
-    
-    <!-- LEFT: Logo (left aligned) -->
+
+    <!-- LEFT: Hamburger (mobile) + Logo -->
     <div class="flex items-center gap-2 justify-start">
+      <!-- Mobile menu -->
+      <div class="dropdown">
+        <label tabindex="0" aria-label="Open menu"
+               class="btn btn-ghost btn-sm md:hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+               viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </label>
+        <ul tabindex="0"
+            class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-56">
+          <li><a href="#about">About</a></li>
+          <li><a href="#services">Services</a></li>
+          <li><a href="#why-us">Why Us</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </div>
+
       <a href="/" class="text-xl font-bold">Wood Analytics</a>
     </div>
 
-    <!-- CENTER: Navigation (true center of page) -->
-    <div class="flex justify-center">
+    <!-- CENTER: Desktop nav (hidden on mobile) -->
+    <div class="hidden md:flex justify-center">
       <ul class="flex items-center space-x-12 font-medium">
-    <li><a href="#about" class="hover:text-primary">About</a></li>
-    <li><a href="#services" class="hover:text-primary">Services</a></li>
-    <li><a href="#why-us" class="hover:text-primary">Why Us</a></li>
-    <li><a href="#contact" class="hover:text-primary">Contact</a></li>
+        <li><a href="#about" class="hover:text-primary">About</a></li>
+        <li><a href="#services" class="hover:text-primary">Services</a></li>
+        <li><a href="#why-us" class="hover:text-primary">Why Us</a></li>
+        <li><a href="#contact" class="hover:text-primary">Contact</a></li>
       </ul>
     </div>
-    
-    <!-- RIGHT: Placeholder (aligned right) -->
+
+    <!-- RIGHT: CTA -->
     <div class="justify-self-end flex items-center gap-3">
-      <!-- <a href="/signin" class="btn btn-ghost btn-sm md:btn-sm normal-case">Login</a> -->
       <a href="/get-started" class="btn btn-primary btn-sm md:btn-sm rounded-full normal-case px-5">
         Get Started
       </a>
     </div>
   </div>
 </nav>
-
 
     <!-- Main Content -->
     <main class="flex-1 w-full bg-neutral">
@@ -47,30 +64,31 @@
     </main>
 
 
-<footer class="footer bg-base-200 text-base-content py-10 w-full">
-  <div class="max-w-7xl mx-auto grid grid-cols-3 items-center px-4">
+<footer class="bg-base-200 text-base-content py-10 w-full">
+  <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-y-6 px-4 text-center">
     
-    <!-- LEFT: Logo (left aligned) -->
-    <div class="flex items-center gap-2 justify-start">
+    <!-- LEFT: Logo -->
+    <div>
       <a href="/" class="text-xl font-bold">Wood Analytics</a>
     </div>
 
-    <!-- CENTER: Navigation (true center of page) -->
-    <div class="flex justify-center">
-      <ul class="flex items-center space-x-12 font-medium">
-    <li><a href="#about" class="hover:text-primary">About</a></li>
-    <li><a href="#services" class="hover:text-primary">Services</a></li>
-    <li><a href="#why-us" class="hover:text-primary">Why Us</a></li>
+    <!-- CENTER: Navigation -->
+    <div>
+      <ul class="flex flex-col md:flex-row justify-center gap-4 md:space-x-12 font-medium">
+        <li><a href="#about" class="hover:text-primary">About</a></li>
+        <li><a href="#services" class="hover:text-primary">Services</a></li>
+        <li><a href="#why-us" class="hover:text-primary">Why Us</a></li>
       </ul>
     </div>
     
-    <!-- RIGHT: Placeholder (aligned right) -->
-    <div class="justify-self-end flex items-center gap-3">
-      <!-- <a href="/signin" class="btn btn-ghost btn-sm md:btn-sm normal-case">Login</a> -->
-    <p>&copy; 2025 Wood Analytics. All rights reserved.</p>
+    <!-- RIGHT: Copyright -->
+    <div class="flex flex-col items-center md:items-end">
+      <p>&copy; 2025 Wood Analytics.</p>
+      <p>All rights reserved.</p>
     </div>
   </div>
 </footer>
+
 
 
 

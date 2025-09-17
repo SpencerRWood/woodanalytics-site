@@ -37,4 +37,4 @@ COPY --from=tailwind-builder /build/app/static/css/output.css /workspace/app/sta
 # Expose & run
 EXPOSE 8001
 # For prod you'd typically use gunicorn/uvicorn workers; keeping reload here only if you want dev-like behavior
-CMD ["uvicorn", "app.app:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
