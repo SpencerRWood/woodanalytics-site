@@ -5,9 +5,10 @@ WORKDIR /src
 COPY package*.json tailwind.config.js ./
 # copy the rest so tailwind has the source files
 COPY . .
-RUN npm ci --no-audit --no-fund
-# assumes you have "build:css" in package.json
-RUN npm run build:css
+RUN npm ci
+COPY tailwind.config.js styles.css ./         
+COPY templates ./templates                    
+RUN npx tailwindcss -c tailwind.config.js -i ./styles.css -o ./static/css/output.css --minify
 
 # ---- python runtime ----
 
