@@ -1,13 +1,25 @@
 # ---- build static assets (Tailwind/DaisyUI) ----
 FROM node:20-alpine AS assets
 WORKDIR /src
-# only copy what we need first for better layer caching
-COPY package*.json tailwind.config.js ./
-# copy the rest so tailwind has the source files
-COPY . .
-RUN npm ci --no-audit --no-fund
-# assumes you have "build:css" in package.json
-RUN npm run build:css
+
+COPY package*.json ./
+RUN npm ci
+
+# Tailwind input + config
+COPY tailwind.config.js styles.css ./
+
+# Copy templates so Tailwind can scan them
+# (adjust path if yours differ)
+RUN mkdir -p templates
+COPY app/templates ./templates
+# If you also keep some root HTML pages:
+# COPY ./*.html ./templates/
+
+# Build CSS
+RUN npx tailwindcss -c tailwind.config.js \
+    -i ./styles.css \
+    -o ./output.css \
+    --minify
 
 # ---- python runtime ----
 
