@@ -8,18 +8,18 @@
     <link href="/static/css/output.css?v={{ build_id }}" rel="stylesheet">
 </head>
 <body class="min-h-screen flex flex-col">
-    <!-- DaisyUI Top Bar Navbar -->
+<!-- DaisyUI Top Bar Navbar -->
 <nav class="sticky top-0 z-50 border-b border-base-300
            bg-base-100/90 backdrop-blur supports-[backdrop-filter]:bg-base-100/80
            transition-colors duration-300 py-2 w-full">
-  <div class="max-w-7xl mx-auto grid grid-cols-3 items-center px-4">
+  <div class="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-3 items-center px-4">
 
     <!-- LEFT: Hamburger (mobile) + Logo -->
     <div class="flex items-center gap-2 justify-start">
       <!-- Mobile menu -->
-      <div class="dropdown">
+      <div class="dropdown md:hidden">
         <label tabindex="0" aria-label="Open menu"
-               class="btn btn-ghost btn-sm md:hidden">
+               class="btn btn-ghost btn-sm">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -38,7 +38,7 @@
       <a href="/" class="text-xl font-bold">Wood Analytics</a>
     </div>
 
-    <!-- CENTER: Desktop nav (hidden on mobile) -->
+    <!-- CENTER: Desktop nav -->
     <div class="hidden md:flex justify-center">
       <ul class="flex items-center space-x-12 font-medium">
         <li><a href="#about" class="hover:text-primary">About</a></li>
@@ -50,12 +50,14 @@
 
     <!-- RIGHT: CTA -->
     <div class="justify-self-end flex items-center gap-3">
-      <a href="/get-started" class="btn btn-primary btn-sm md:btn-sm rounded-full normal-case px-5">
+      <a href="/get-started"
+         class="btn btn-primary btn-sm md:btn-sm rounded-full normal-case px-5">
         Get Started
       </a>
     </div>
   </div>
 </nav>
+
 
     <!-- Main Content -->
     <main class="flex-1 w-full bg-neutral">
